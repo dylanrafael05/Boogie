@@ -1,0 +1,72 @@
+{
+    "If Statement": {
+        "prefix": ["if"],
+        "body": [
+            "if ${1:condition} do",
+            "\t$0",
+            "end"
+        ],
+        "description": "A simple if statement."
+    },
+    "While Loop":
+    {
+        "prefix": ["while"],
+        "body": [
+            "while ${1:condition} do",
+            "\t$0",
+            "end"
+        ],
+        "description": "A simple while statement."
+    },
+    "For Loop":
+    {
+        "prefix": ["for"],
+        "body": [
+            "for ${1:item} in ${2:items} do",
+            "\t$0",
+            "end"
+        ],
+        "description": "A simple for loop which iterates over a set of items."
+    },
+    "For Range Loop":
+    {
+        "prefix": ["for_r", "for_range"],
+        "body": [
+            "for i in ${1:start} to ${2:end} do",
+            "\t$0",
+            "end"
+        ]
+    },
+    "For Range Reverse Loop":
+    {
+        "prefix": ["for_r", "for_rrange", "for_reverse_range"],
+        "body": [
+            "for i in ${1:start} to ${2:end} by -1 do",
+            "\t$0",
+            "end"
+        ]
+    },
+    "Try Block":
+    {
+        "prefix": ["try"],
+        "body": [
+            "try",
+            "\t$0",
+            "catch e in",
+            "\t",
+            "end"
+        ]
+    },
+    "Main":
+    {
+        "prefix": ["main"],
+        "body": [
+            "main() := do",
+            "\t$0",
+            "end",
+            "",
+            "-- Run the 'main' function if this program is the main program.",
+            "if is_main do main() end"
+        ]
+    }
+}

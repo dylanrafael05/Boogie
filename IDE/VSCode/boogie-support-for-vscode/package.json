@@ -1,0 +1,29 @@
+{
+    "name": "boogie-support-for-vscode",
+    "displayName": "Boogie Support for VSCode",
+    "description": "A simple, work in progress extension which adds support for the Boogie language to Visual Studio Code!",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.64.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "boogie",
+            "aliases": ["Boogie"],
+            "extensions": [".bge",".boogie"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "boogie",
+            "scopeName": "source.boogie",
+            "path": "./syntaxes/boogie.tmLanguage.json"
+        }],
+        "snippets": [{
+            "language": "boogie",
+            "path": "./snippets/snippets.json"
+        }]
+    }
+}

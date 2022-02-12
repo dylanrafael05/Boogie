@@ -1,0 +1,10 @@
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\obj\Debug\netstandard2.0\Generators.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\obj\Debug\netstandard2.0\Generators.AssemblyInfoInputs.cache
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\obj\Debug\netstandard2.0\Generators.AssemblyInfo.cs
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\obj\Debug\netstandard2.0\Generators.csproj.CoreCompileInputs.cache
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\bin\Debug\netstandard2.0\Generators.deps.json
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\bin\Debug\netstandard2.0\Generators.dll
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\bin\Debug\netstandard2.0\Generators.pdb
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\obj\Debug\netstandard2.0\Generators.dll
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\obj\Debug\netstandard2.0\Generators.pdb
+C:\Users\dylan\OneDrive\Desktop\Programming\Boogie\Generators\obj\Debug\netstandard2.0\Generators.csproj.AssemblyReference.cache

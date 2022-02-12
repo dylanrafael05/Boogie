@@ -1,0 +1,139 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Boogie",
+	"patterns":[
+		{
+			"include": "#main"
+		}
+	],
+	"repository":{
+		"main":{
+			"patterns":[
+				{
+					"name":"comment.block.boogie",
+					"begin":"-\\*",
+					"end":"\\*-"
+				},
+				{
+					"name":"comment.block.documentation.boogie",
+					"begin":"-\\*\\*",
+					"end":"\\*-"
+				},
+				{
+					"name":"comment.line.double-dash.boogie",
+					"match": "--.*?(\\n|\\r|$)"
+				},
+				{
+					"name": "keyword.control.$1.boogie",
+					"match": "\\b(if|else|elseif|do|for|catch|end|while|return|function|try)\\b"
+				},
+				{
+					"name": "keyword.other.$1.boogie",
+					"match": "\\b(let|const|object)\\b"
+				},
+				{
+					"name": "variable.language.meta",
+					"match": "\\b__[a-zA-Z0-9_]*\\b"
+				},
+				{
+					"name": "variable.other.private",
+					"match": "\\b_[a-zA-Z0-9_]+\\b"
+				},
+				{
+					"name": "variable.language.boogie",
+					"match":"_|\\.\\.\\."
+				},
+				{
+					"name": "support.other.continuation",
+					"match": "\\.\\."
+				},
+				{
+					"name": "variable.language.$1.boogie",
+					"match":"\\b(self|meta|int|num|str|bool|list|table|vec2|vec3|vec4|is_main|err)\\b"
+				},
+				{
+					"name": "keyword.operator.new.$1.boogie",
+					"match": "\\b(in|is|and|not|or)\\b"
+				},
+				{
+					"name": "variable.boogie",
+					"match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+				},
+				{
+					"name": "keyword.operator.boogie",
+					"match": "(\\+|-|\\*|\\/|\\/\\/|\\*\\*|\\*\\.|\\*\\/|==|!=|~=|>|>=|<=|<|\\|>|=|:=|\\.|:)"
+				},
+				{
+					"name": "keyword.operator.boogie",
+					"match": "!"
+				},
+				{
+					"name": "constant.language.boogie",
+					"match": "\\b(true|false|nil)\\b"
+				},
+				{
+					"name": "constant.numeric.integer.boogie",
+					"match": "\\d((\\d|')*\\d)?"
+				},
+				{
+					"name": "constant.numeric.float.boogie",
+					"match": "\\d(\\d|')*\\d?\\.(\\d|')*\\d"
+				},
+				{
+					"include": "#string"
+				}
+			]
+		},
+		"string":{
+			"patterns":[
+				{
+					"name":"string.quoted.single.boogie",
+					"begin": "'((?:'')*)",
+					"patterns":[{
+						"include": "#string-content"
+					}],
+					"end": "\\1'"
+				},
+				{
+					"name":"string.quoted.double.boogie",
+					"begin": "\"((?:\"\")*)",
+					"patterns":[{
+						"include": "#string-content"
+					}],
+					"end": "\\1\""
+				}
+			]
+		},
+		"string-content":{
+			"patterns":[
+				{
+					"name":"constant.character.escape.boogie",
+					"match": "\\\\([nt0\\\\\\$\\}'\"]|[uU]\\d{4})"
+				},
+				{
+					"begin": "(\\$\\{)",
+					"beginCaptures": {
+						"1": {
+							"name": "meta.preprocessor.interpolation.boogie"
+						}
+					},
+
+					"patterns":[{
+						"include":"#main"
+					}],
+
+					"end": "(\\})",
+					"endCaptures": {
+						"1": {
+							"name": "meta.preprocessor.interpolation.boogie"
+						}
+					}
+				},
+				{
+					"match": "."
+				}
+			]
+		}
+	},
+	"scopeName": "source.boogie"
+}

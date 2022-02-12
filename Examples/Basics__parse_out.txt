@@ -1,0 +1,58 @@
+Block {
+    Content = [
+        AssignNewSimple {
+            Base = Identifier {
+                Value = "a"
+            },
+            Value = Literal {
+                Value = 0
+            }
+        },
+        AssignSimple {
+            Base = Identifier {
+                Value = "a"
+            },
+            Value = Literal {
+                Value = False
+            }
+        },
+        AssignSimple {
+            Base = Identifier {
+                Value = "a"
+            },
+            Value = Literal {
+                Value = null
+            }
+        },
+        IfStatement {
+            Condition = BinaryOperator {
+                Type = Equal,
+                Lhs = Identifier {
+                    Value = "a"
+                },
+                Rhs = Literal {
+                    Value = 0
+                }
+            },
+            Content = Block {
+                Content = [
+                    CallOperator {
+                        Func = Identifier {
+                            Value = "print"
+                        },
+                        Args = [
+                            Identifier {
+                                Value = "a"
+                            },
+                            Literal {
+                                Value = 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            Else = null,
+            Elseif = null
+        }
+    ]
+}

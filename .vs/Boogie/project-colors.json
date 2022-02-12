@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "f0bfa3cf-8073-4fcd-8e45-65064f2de6eb": {
+      "ProjectGuid": "f0bfa3cf-8073-4fcd-8e45-65064f2de6eb",
+      "DisplayName": "Lang",
+      "ColorIndex": 0
+    },
+    "9bd4f573-45fb-4b18-8cba-7c139df3d969": {
+      "ProjectGuid": "9bd4f573-45fb-4b18-8cba-7c139df3d969",
+      "DisplayName": "Tests",
+      "ColorIndex": 1
+    },
+    "b676aa0c-74e4-4777-8724-b5d8b9b1b94f": {
+      "ProjectGuid": "b676aa0c-74e4-4777-8724-b5d8b9b1b94f",
+      "DisplayName": "SampleOutput",
+      "ColorIndex": 2
+    },
+    "7c0276ed-6b92-4f80-966d-0a534a09df24": {
+      "ProjectGuid": "7c0276ed-6b92-4f80-966d-0a534a09df24",
+      "DisplayName": "TestHelper",
+      "ColorIndex": 3
+    },
+    "41d8dd01-7caa-4894-9855-87e4d0d33b36": {
+      "ProjectGuid": "41d8dd01-7caa-4894-9855-87e4d0d33b36",
+      "DisplayName": "Debug",
+      "ColorIndex": 4
+    },
+    "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3": {
+      "ProjectGuid": "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3",
+      "DisplayName": "Miscellaneous Files",
+      "ColorIndex": -1
+    },
+    "e4c7cbc4-f3af-41f9-acaf-b61c1356acdc": {
+      "ProjectGuid": "e4c7cbc4-f3af-41f9-acaf-b61c1356acdc",
+      "DisplayName": "Generators",
+      "ColorIndex": 5
+    }
+  },
+  "NextColorIndex": 6
+}
