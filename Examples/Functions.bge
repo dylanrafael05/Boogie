@@ -1,0 +1,61 @@
+--------------------------------
+-- Functions
+-------------------------------- 
+
+-- do-nothing function
+let a = func do end
+
+-- cat function
+let cat = func n return n
+
+-- take the sum of a list
+let sum = func l do
+    let total = 0
+    for i in l do
+        total = total + i
+    end
+    return total
+end
+
+-- average two lists
+let average_lists = func l1, l2 do
+    let new_list = []
+    for i in 0 to l1.len do
+        new_list.add((l1[i] + l2[i]) / 2)
+    end
+    return new_list
+end
+
+-- applying functions
+let l1 = [0, 1, 2]
+let l2 = [0, 1, 2]
+
+let result = new_list
+result = average_lists(l1, l2)
+
+--------------------------------
+-- Other function types
+-------------------------------- 
+
+-- members: special case of a function
+-- built in to the language
+let int.square = member return self ** 2
+
+-- properties: special case
+let int.magnitude = prop 
+    get return sqrt(self)
+end
+let dict.first = prop
+    get return iterate(self).next()
+    set do self[first.key] = value end
+end
+
+let int.get_magnitude = int.get magnitude
+
+--------------------------------
+-- Variable argument counts
+--------------------------------
+
+let vargs_ex = func do
+    let a = func.args -- a list of passed arguments
+end

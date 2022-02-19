@@ -25,11 +25,11 @@
 				},
 				{
 					"name": "keyword.control.$1.boogie",
-					"match": "\\b(if|else|elseif|do|for|catch|end|while|return|function|try)\\b"
+					"match": "\\b(if|else|elseif|do|for|catch|end|while|return|func|member|prop|try|throw)\\b"
 				},
 				{
 					"name": "keyword.other.$1.boogie",
-					"match": "\\b(let|const|object)\\b"
+					"match": "\\b(let|get|set|to|by)\\b"
 				},
 				{
 					"name": "variable.language.meta",
@@ -49,7 +49,7 @@
 				},
 				{
 					"name": "variable.language.$1.boogie",
-					"match":"\\b(self|meta|int|num|str|bool|list|table|vec2|vec3|vec4|is_main|err)\\b"
+					"match":"\\b(self|meta|int|float|str|bool|list|dict|is_main|err)\\b"
 				},
 				{
 					"name": "keyword.operator.new.$1.boogie",

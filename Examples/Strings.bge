@@ -1,0 +1,14 @@
+let a := 'Hello, world!'
+
+a = '''Triple quotes'''
+a = "Double quotes"
+a = """Triple double quotes"""
+
+a = '''''Quintuple quotes'''''
+a = """""Quintuple double quotes"""""
+
+a = "\n\r\t\0 escape characters \0\t\n\r"
+a = "\
+
+    \Whitespace escape"
+a = ""

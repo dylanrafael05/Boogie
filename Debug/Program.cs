@@ -34,6 +34,47 @@ void Clear()
     Console.Clear();
 }
 
+void PrintExamplesList()
+{
+    Print("Available examples:");
+    foreach (var f in Directory.EnumerateFiles(ExamplesPath))
+    {
+        var fInfo = new FileInfo(f);
+
+        if (fInfo.Extension is ".bge" or ".boogie")
+        {
+            Print("  - " + fInfo.Name);
+        }
+    }
+}
+
+string ParseDebug(string sourcePath, string filename)
+{
+    try
+    {
+        var cons = new Parser(new Lexer(File.ReadAllText(sourcePath), filename)).Parse();
+        return cons.GetDescription();
+    }
+    catch(SyntaxException syntaxException)
+    {
+        return "SyntaxException:\n" + syntaxException.Message;
+    }
+}
+
+string LowerDebug(string sourcePath, string filename)
+{
+    try
+    {
+        var cons = new Parser(new Lexer(File.ReadAllText(sourcePath), filename)).Parse();
+        var prog = ProgramBuilder.New().AddCons(cons).Build();
+        return prog.GetDescription();
+    }
+    catch (SyntaxException syntaxException)
+    {
+        return "SyntaxException:\n" + syntaxException.Message;
+    }
+}
+
 //////////////////////////////////
 /// CONSTANTS
 //////////////////////////////////
@@ -44,6 +85,7 @@ Welcome to the Boogie Debugger Tool!
 This tool can help you develop or work with Boogie's backend with multiple commands:
  - test-parser [0]
  - update-test-data [1]
+ - test-lowerer [2]
 ".Trim());
     Print("");
 
@@ -54,46 +96,9 @@ This tool can help you develop or work with Boogie's backend with multiple comma
     {
         case "test-parser" or "0":
         {
-            string[] testSources = new[]
-    {
-@"
-b := 0
-a := b + 1
-
-if a == b do
-    print! a
-else
-    print! b
-end
-"
-    };
-
-            foreach (string source in testSources)
-            {
-                Print(":: SOURCE ::");
-                Print(source);
-
-                Print(":: PARSED ::");
-                Print(new Parser(new Lexer(source, "source.bgy")).Parse().GetDescription());
-            }
-
-            break;
-        }
-
-        case "update-test-data" or "1":
-        {
             while (true)
             {
-                Print("Available examples:");
-                foreach(var f in Directory.EnumerateFiles(ExamplesPath))
-                {
-                    var fInfo = new FileInfo(f);
-
-                    if (fInfo.Extension is ".bge" or ".boogie")
-                    {
-                        Print("  - " + fInfo.Name);
-                    }
-                }
+                PrintExamplesList();
                 PrintNewLine(2);
 
                 var file = Input("Enter the file to update:");
@@ -108,10 +113,70 @@ end
 
                     continue;
                 }
-                var fileInfo = new FileInfo(file);
+                var consDesc = ParseDebug(path, file);
 
-                var cons = new Parser(new Lexer(File.ReadAllText(path), path)).Parse();
-                var consDesc = cons.GetDescription();
+                Console.Clear();
+                Print("This file was parsed as such: \n");
+                Print(consDesc);
+
+                break;
+            }
+
+            break;
+        }
+
+        case "test-lowerer" or "2":
+        {
+            while (true)
+            {
+                PrintExamplesList();
+                PrintNewLine(2);
+
+                var file = Input("Enter the file to update:");
+                PrintNewLine(2);
+
+                var path = Path.GetFullPath(Path.Combine(ExamplesPath, file));
+                Print("The full path of this file is: " + path);
+
+                if (!File.Exists(path))
+                {
+                    Print("Invalid example!");
+
+                    continue;
+                }
+                var consDesc = LowerDebug(path, file);
+
+                Console.Clear();
+                Print("This file was parsed as such: \n");
+                Print(consDesc);
+
+                break;
+            }
+
+            break;
+        }
+
+        case "update-test-data" or "1":
+        {
+            while (true)
+            {
+                PrintExamplesList();
+                PrintNewLine(2);
+
+                var file = Input("Enter the file to update:");
+                PrintNewLine(2);
+
+                var path = Path.GetFullPath(Path.Combine(ExamplesPath, file));
+                Print("The full path of this file is: " + path);
+
+                if (!File.Exists(path))
+                {
+                    Print("Invalid example!");
+
+                    continue;
+                }
+                var fileInfo = new FileInfo(path);
+                var consDesc = ParseDebug(path, file);
 
                 Console.Clear();
                 Print("This file was parsed as such: \n");

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Boogie.Lang.Core;
+﻿namespace Boogie.Lang.Core;
 
 /// <summary>
 /// A record which describes a position in some source code.
@@ -27,7 +22,7 @@ public record struct SourceSpan(int Char, int EndChar, int Line, int EndLine, in
     /// </summary>
     public SourceSpan Combine(SourceSpan other)
     {
-        var min = other.Raw > Raw ? other : this;
+        var min = other.Raw < Raw ? other : this;
         var max = other.EndRaw > EndRaw ? other : this;
 
         return new(

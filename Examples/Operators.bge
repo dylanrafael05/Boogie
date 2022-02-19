@@ -1,0 +1,11 @@
+let vector2 = {}
+
+--constructor
+let vector2.new = func x, y return..
+{
+    x = 0,
+    y = 0,
+    members = vector2
+}
+
+let vector2.op+ = member other return vector2.new()

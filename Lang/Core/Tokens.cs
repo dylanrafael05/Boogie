@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Boogie.Lang.Core;
+﻿namespace Boogie.Lang.Core;
 
 // TODO: Add support for 'trivia'
 // See implementation of C#'s roslyn.
-public record Token(TokenType Type, SourceSpan Position, object? Value = null) : Construct
+public record Token(TokenType Type, SourceSpan Span, object? Value = null) : Construct
 {
-    public override SourceSpan Span { get; } = Position;
+    public override SourceSpan Span { get; } = Span;
 }
 
 /// <summary>
@@ -64,7 +60,7 @@ public enum TokenType
     Not,
 
     Equals,
-    ColonEq,
+    ColonEquals,
 
     Bang,
 
@@ -211,7 +207,7 @@ public static class TokenTypeExtensions
             TokenType.And => "'and'",
             TokenType.Not => "'not'",
             TokenType.Equals => "'='",
-            TokenType.ColonEq => "':='",
+            TokenType.ColonEquals => "':='",
             TokenType.OpenParen => "'('",
             TokenType.CloseParen => "')'",
             TokenType.OpenTable => "'{'",

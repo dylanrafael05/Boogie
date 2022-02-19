@@ -1,0 +1,47 @@
+-----------------------
+-- Collection types
+-----------------------
+
+let a
+
+-- list
+a = 0, 1, 2, 3
+
+-- list: []
+a = [4, 5, 6, 7]
+a = []
+
+-- dict: #[]
+a = #[ 0 = 0, 'hello' = 0 ]
+a = #[]
+
+-- object: {}
+a = { a = 0, b = 0 }
+a = {}
+
+-------------------------------
+-- Properties of collections
+-------------------------------
+
+-- FUTURE
+-- -- lists can be 'deconstructed'
+-- let a1, a2 = 0, 1 -- let binds new for each
+-- (let a3), a1 = 0, 1 -- here, let binds for one
+-- -- they can also be 'splatted' with ,,
+-- some_function(a,,)
+
+-- objects have a special member named 'members' 
+-- which represents the items shared by of a subset of objects
+-- Only objects of type 'member' can be read from this member
+-- and these can be accessed with the default '.' operator
+a.members
+
+-- Furthermore, these members are coerced into 
+-- functions when accessed with the '.' operator.
+-- This process is about the same as the following transformation:
+
+-- BEFORE
+a = something.do_that
+
+-- AFTER
+a = func __args return something.do_that(__args,,)

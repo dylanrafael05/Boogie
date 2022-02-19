@@ -1,141 +1,516 @@
-﻿using System.Collections;
-using System.Text;
-using System.Text.RegularExpressions;
-
+﻿using Boogie.Model;
 namespace Boogie.Lang.Core;
 
-public static class Metamethods
+public class Parser
 {
-    public const string
+    // INPUT
+    private readonly ForkableDataStream<Token> tokenStream;
 
-        Plus = "__add",
-        Minus = "__sub",
-        Star = "__mul",
-        Div = "__div",
-        Neg = "__neg",
-
-        DoubleStar = "__pow",
-        DoubleDiv = "__idiv",
-
-        DotProduct = "__dot_prod",
-        CrossProduct = "__cross_prod",
-
-        Equal = "__eq",
-        LessThan = "__lt",
-        LessThanEqual = "__le",
-
-        Read = "__get",
-        Write = "__set",
-        WriteNew = "__set_new",
-
-        Iterator = "__iter",
-        IterAdvance = "advance",
-        IterGet = "get",
-        IterReset = "reset",
-
-        Bool = "__bool"
-
-    ;
-}
-
-
-public record struct LabelInfo(int Id, int Position);
-
-public static class StringComparisonExtensions
-{
-    public static bool EqualsWhitespiceInsensitive(this string a, string b)
-        => Regex.Replace(a, @"\s+", "") == Regex.Replace(b, @"\s+", " ");
-
-    // From https://stackoverflow.com/a/14087738
-}
-
-/*public abstract record Construct
-{
-    public SourcePosition Position { get; }
-
-    public Construct(SourcePosition position)
+    public Parser(Lexer lexer)
     {
-        this.Position = position;
+        tokenStream = lexer.GetTokenStream();
     }
 
-    private const string Indentation = "    ";
-    public string GetDescription(int level = 1)
+    private enum Associativity
     {
-        string Indent(string txt, int levelOffset = 0)
-            => new StringBuilder(Indentation.Length * (level + levelOffset) + txt.Length).Insert(0, Indentation, level + levelOffset).Append(txt).ToString();
+        Left,
+        Right,
+    }
 
-        var t = GetType();
-        var str = new StringBuilder(t.Name);
+    private Token Current => tokenStream.Get()!;
+    private Token Get(int offset) => tokenStream.Get(offset)!;
+    private void Advance(int count = 1)
+        => tokenStream.Advance(count);
+    private Token Read(int offset = 0)
+        => tokenStream.Read(offset);
 
-        str.Append(' ').Append('{');
-
-        foreach(var prop in t.GetProperties())
+    private void SkipNewlines()
+    {
+        while (Current.Type == TokenType.LineBreak)
         {
-            if(prop.Name == nameof(Position))
-            {
-                continue;
-            }
+            Advance();
+        }
+    }
 
-            str.Append("\n")
-               .Append(Indent(prop.Name + " = "));
+    private Token Require(Predicate<TokenType> tokenPredicate, Func<Token, string> errorMessageBuilder)
+    {
+        var t = tokenStream.Read();
+        if (tokenPredicate(t.Type))
+        {
+            return t;
+        }
+        else
+        {
+            throw new ParserException(errorMessageBuilder(t), t.Span);
+        }
+    }
 
-            var pVal = prop.GetValue(this);
-            Type pType = pVal?.GetType()!;
-
-            if (pVal == null)
-            {
-                str.Append("null");
-            }
-            // Construct or DerivedConstruct
-            else if (pType.IsSubclassOf(typeof(Construct)))
-            {
-                str.Append((pVal as Construct)!.GetDescription(level + 1));
-            }
-            // Any IEnumerable<Construct>
-            else if (pType.GetInterfaces()
-               .FirstOrDefault(
-                    t => t.GetInterfaces().FirstOrDefault(
-                        t1 => t1.IsGenericType 
-                           && t1.GetGenericTypeDefinition() == typeof(IEnumerable<>) 
-                           && typeof(Construct).IsAssignableFrom(t1.GenericTypeArguments[0])
-                    ) != null
-                ) != null)
-            {
-                str.Append("[");
-
-                foreach (var item in (IEnumerable)pVal!)
-                {
-                    str.Append('\n')
-                       .Append(Indent("", 1))
-                       .Append(((Construct)item).GetDescription(level + 2))
-                       .Append(',');
-                }
-
-                str.Remove(str.Length - 1, 1)
-                   .Append('\n')
-                   .Append(Indent("]"));
-            }
-            // Strings
-            else if(pType == typeof(string))
-            {
-                str.Append(((string)pVal!).ToLiteral());
-            }
-            // Other
-            else
-            {
-                str.Append(pVal);
-            }
-
-            str.Append(',');
+    private Identifier IdenFromToken(Token token)
+    {
+        if(token.Type is not TokenType.Identifier)
+        {
+            throw new InvalidOperationException();
         }
 
-        str.Remove(str.Length - 1, 1)
-           .Append('\n')
-           .Append(Indent("}", -1));
-
-        return str.ToString();
+        return new(token, (token.Value as string)!);
     }
-}*/
+
+    private Identifier RequireIdentifier(Func<Token, string> errorMessageBuilder)
+    {
+        var tok = Require(t => t is TokenType.Identifier, errorMessageBuilder);
+        return IdenFromToken(tok);
+    }
+
+    public Block Parse()
+    {
+        SkipNewlines();
+        (var block, _) = ParseBlockUpto(t => t is TokenType.EOF);
+        Require(t => t is TokenType.EOF, tok => "Expected end of file.");
+
+        return block;
+    }
+
+    // Parse from basic file
+    private (Block block, Token end) ParseBlockUpto(Predicate<TokenType>? endPred = null)
+    {
+        endPred ??= t => t is TokenType.EndKeyword;
+        var stmts = new List<Construct>();
+
+        while(!endPred(Current.Type))
+        {
+            stmts.Add(ParseStatement());
+        }
+
+        return (new(stmts), Read());
+    }
+
+
+    public ElseBlock ParseElse(Token elseKey)
+    {
+        var (content, end) = ParseBlockUpto();
+        return new(elseKey, content, end);
+    }
+    public ElseifBlock ParseElseif(Token elseifKey)
+    {
+        var condition = ParseExpression();
+        var doKey = Require(t => t is TokenType.DoKeyword, tok => "Expected 'do' or 'then' after 'elseif [condition]'");
+
+        var (content, end) = ParseBlockUpto(t => t is TokenType.ElseifKeyword or TokenType.ElseKeyword or TokenType.EndKeyword);
+        var trailing = ParseIfStatementTrailing(end);
+
+        return new(elseifKey, condition, doKey, content, trailing);
+    }
+
+    private IfStatementTrailing ParseIfStatementTrailing(Token end)
+    {
+        return end.Type switch
+        {
+            TokenType.ElseifKeyword => ParseElseif(end),
+            TokenType.ElseKeyword => ParseElse(end),
+            TokenType.EndKeyword => new IfEnd(end) as IfStatementTrailing,
+            _ => throw new InvalidOperationException()
+        };
+    }
+
+    public IfStatement ParseIf()
+    {
+        var ifKey = Read();
+        var condition = ParseExpression();
+        var doKey = Require(t => t is TokenType.DoKeyword, tok => "Expected 'do' or 'then' after 'if [condition]'");
+
+        var (content, end) = ParseBlockUpto(t => t is TokenType.ElseifKeyword or TokenType.ElseKeyword or TokenType.EndKeyword);
+
+        var trailing = ParseIfStatementTrailing(end);
+
+        return new(ifKey, condition, doKey, content, trailing);
+    }
+
+    public WhileStatement ParseWhile()
+    {
+        var whileKey = Read();
+        var condition = ParseExpression();
+        var doKey = Require(t => t is TokenType.DoKeyword, tok => "Expected 'do' after 'when [condition]'");
+
+        var (content, end) = ParseBlockUpto();
+
+        return new(whileKey, condition, doKey, content, end);
+    }
+    public ForIterStatement ParseForIter()
+    {
+        var forKey = Read();
+        var name = RequireIdentifier(tok => "Expected an identifier after 'for'");
+        var inKey = Require(t => t is TokenType.InKeyword, tok => "Expected 'in' after identifier in 'for'");
+        var iterable = ParseExpression();
+        var doKey = Require(t => t is TokenType.DoKeyword, tok => "Expected 'do' after 'for [item] in [some]'");
+
+        var (content, end) = ParseBlockUpto(t => t is TokenType.EndKeyword);
+
+        return new(forKey, name, inKey, iterable, doKey, content, end);
+    }
+
+    public FullStatement ParseStatement()
+    {
+        var start = new List<Token>();
+        while (Current.Type is TokenType.LineBreak or TokenType.Semicolon)
+        {
+            start.Add(Read());
+        }
+
+        Construct item;
+
+        if (Current.Type is TokenType.IfKeyword)
+        {
+            item = ParseIf();
+        }
+        else if(Current.Type is TokenType.WhileKeyword)
+        {
+            item = ParseWhile();
+        }
+        else if(Current.Type is TokenType.ForKeyword)
+        {
+            item = ParseForIter();
+        }
+        else
+        {
+            item = ParseSimpleStatement();
+        }
+
+        var end = new List<Token>();
+        while (Current.Type is TokenType.LineBreak or TokenType.Semicolon)
+        {
+            end.Add(Read());
+        }
+
+        return new(start, item, end);
+    }
+    public Construct ParseSimpleStatement()
+    {
+        var assignee = ParseExpression();
+
+        // a [:]= d
+        if(assignee is Identifier or DotOperator or IndexOperator)
+        {
+            switch(Current.Type)
+            {
+                case TokenType.Equals:
+                {
+                    var tok = Read();
+                    return new Assign(assignee, tok, ParseExpression());
+                }
+                case TokenType.ColonEquals:
+                {
+                    var tok = Read();
+                    return new AssignNew(assignee, tok, ParseExpression());
+                }
+            }
+        }
+        // call statement
+        else if(assignee is CallOperator)
+        {
+            return assignee;
+        }
+
+        // TODO: parse a[.b.c]() := [do/expr] and a[.b.c]! := [do/expr]
+
+        throw new ParserException($"Expected a valid statement but got.", assignee.Span);
+    }
+
+    private Expression ParseBinary(Func<TokenType, BinaryOperatorType?> op, Func<Expression> next, Associativity assoc = Associativity.Left)
+    {
+        // LEFT ASSOCIATIVITY:
+        // (a + b) + c
+
+        // RIGHT ASSOCIATIVITY:
+        // a ** (b ** c)
+
+        var args = new List<Expression>();
+        var ops = new List<(BinaryOperatorType type, Token tok)>();
+
+        args.Add(next());
+        
+        while (op(Current.Type) is BinaryOperatorType opType)
+        {
+            var tok = Read();
+            ops.Add((opType, tok));
+
+            SkipNewlines();
+
+            args.Add(next());
+        }
+
+        // Single case
+        if(args.Count == 1)
+        {
+            return args[0];
+        }
+
+        // Many
+        if(assoc is Associativity.Left)
+        {
+            var binOp = args.First();
+            for(int i = 1; i < args.Count; i++)
+            {
+                var (type, tok) = ops[i - 1];
+                binOp = new BinaryOperator(type, binOp, tok, args[i]);
+            }
+            return binOp;
+        }
+        else
+        {
+            var binOp = args.Last();
+            for(int i = args.Count - 2; i >= 0; i--)
+            {
+                var (type, tok) = ops[i];
+                binOp = new BinaryOperator(type, args[i], tok, binOp);
+            }
+            return binOp;
+        }
+    }
+    public Expression ParseUnaryPre(Func<TokenType, UnaryOperatorType?> op, Func<Expression> next)
+    {
+        if (op(Current.Type) is UnaryOperatorType opType)
+        {
+            var tok = Read();
+            var val = next();
+
+            return new PrefixUnaryOperator(opType, tok, val);
+        }
+
+        return next();
+    }
+
+    // Expression parsers
+    public Expression ParseExpression()
+    {
+        return ParseOrExpr(); //ParseCommaListExpr();
+    }
+
+    public bool CanParseInline()
+        => Current.Type is not TokenType.LineBreak and not TokenType.Semicolon;
+    public Expression ParseInline(Func<Expression> item)
+    {
+        while(Current.Type is TokenType.DoubleDot)
+        {
+            Advance();
+            Require(t => t is TokenType.LineBreak, tok => $"Double dots must be followed by line breaks!");
+            while (Current.Type is TokenType.LineBreak)
+                Advance();
+        }
+
+        return item();
+    }
+
+    private CommaList ParseCommaList(Predicate<TokenType>? endPred = null)
+    {
+        ////////////////////////////////
+        var next = ParseOrExpr; //ParseForwardPipeExpr;
+        ////////////////////////////////
+
+        var constructs = new List<Construct>();
+
+        if(endPred != null)
+        {
+            while (!endPred(Current.Type))
+            {
+                constructs.Add(next());
+                if(Current.Type != TokenType.Comma)
+                {
+                    break;
+                }
+
+                constructs.Add(Read());
+            }
+        }
+        else
+        {
+            constructs.Add(next());
+
+            while (Current.Type == TokenType.Comma)
+            {
+                constructs.Add(Read());
+                constructs.Add(next());
+            }
+        }
+
+        return new(constructs);
+    }
+
+    /*
+    public Expression ParseCommaListExpr()
+        => ParseCommaList() is var cl && cl.Args.Length > 1 ? new ListLiteral(cl.Args) : cl.Args.First();
+    public Expression ParseForwardPipeExpr()
+        => ParseBinary(t => t is TokenType.PipeOperator ? BinaryOperatorType.PipeForward : null, ParseOrExpr);
+    */
+    public Expression ParseOrExpr()
+        => ParseBinary(t => t is TokenType.Or ? BinaryOperatorType.Or : null, ParseAndExpr);
+    public Expression ParseAndExpr()
+        => ParseBinary(t => t is TokenType.And ? BinaryOperatorType.And : null, ParseNotExpr);
+    public Expression ParseNotExpr()
+        => ParseUnaryPre(t => t is TokenType.Not ? UnaryOperatorType.Not : null, ParseComparisonExpr);
+    public Expression ParseComparisonExpr()
+        => ParseBinary(t => t switch
+        {
+            TokenType.DoubleEquals => BinaryOperatorType.Equal,
+            TokenType.NotEquals => BinaryOperatorType.NotEqual,
+            TokenType.GreaterThan => BinaryOperatorType.GreaterThan,
+            TokenType.LessThan => BinaryOperatorType.LessThan,
+            TokenType.GreaterThanOrEqual => BinaryOperatorType.GreaterThanOrEqual,
+            TokenType.LessThanOrEqual => BinaryOperatorType.LessThanOrEqual,
+            TokenType.InKeyword => BinaryOperatorType.In,
+            _ => null
+        }, ParseAdditiveExpr);
+
+    public Expression ParseAdditiveExpr()
+        => ParseBinary(t => t is TokenType.Plus ? BinaryOperatorType.Add : (t is TokenType.Minus ? BinaryOperatorType.Sub : null),
+                       ParseMultiplicativeExpr);
+    public Expression ParseMultiplicativeExpr()
+        => ParseBinary(t => t switch
+        {
+            TokenType.Star          => BinaryOperatorType.Mul,
+            TokenType.Div           => BinaryOperatorType.Div,
+            TokenType.Mod           => BinaryOperatorType.Mod,
+            TokenType.DoubleDiv     => BinaryOperatorType.IDiv,
+            _ => null
+        }, ParseExponentialExpr);
+
+    public Expression ParseExponentialExpr()
+        => ParseBinary(t => t is TokenType.DoubleStar ? BinaryOperatorType.Pow : null, ParseNegateExpr);
+
+    public Expression ParseNegateExpr()
+        => ParseUnaryPre(t => t is TokenType.Minus ? UnaryOperatorType.Not : null, ParseDotExpr);
+
+    public Expression ParseDotExpr()
+    {
+        ////////////////////////////////
+        var next = ParseCallExpr;
+        ////////////////////////////////
+        
+        var val = next();
+
+        while (Current.Type == TokenType.Dot)
+        {
+            if(Get(1).Type == TokenType.Identifier)
+            {
+                var dot = Read();
+                var iden = IdenFromToken(Read());
+                val = new DotOperator(val, dot, iden, iden.StrValue);
+            }
+            else if(Get(1).Type == TokenType.StringLiteral)
+            {
+                var dot = Read();
+                var strTok = Read();
+                var str = new Literal(strTok, strTok.Value);
+                val = new DotOperator(val, dot, str, (str.Value as string)!);
+            }
+        }
+
+        return val;
+    }
+
+    public Expression ParseCallExpr()
+    {
+        ////////////////////////////////
+        var next = ParseBasicValue;
+        ////////////////////////////////
+        
+        var val = next();
+
+        // f(a, b, c)
+        if(Current.Type == TokenType.OpenParen)
+        {
+            var start = Read();
+            var inner = ParseCommaList(t => t is TokenType.CloseParen);
+            var close = Require(t => t is TokenType.CloseParen, tok => $"Expected matching ')' for '(' (at {start.Span})");
+            return new StandardCallOperator(val, start, inner, close);
+        }
+
+        // f! a b c
+        if(Current.Type == TokenType.Bang)
+        {
+            var bang = Read();
+            var exprs = new List<Expression>();
+
+            while(CanParseInline())
+            {
+                exprs.Add(ParseInline(ParseBasicValue));
+            }
+
+            return new BangCallOperator(val, bang, exprs);
+        }
+
+        // otherwise
+        return val;
+    }
+
+    public Expression ParseBasicValue()
+    {
+        switch(Current.Type)
+        {
+            // a
+            case TokenType.Identifier:
+                return IdenFromToken(Read());
+
+            // literal
+            case TokenType.StringLiteral
+              or TokenType.NumberLiteral
+              or TokenType.FalseLiteral
+              or TokenType.TrueLiteral
+              or TokenType.InfinityLiteral
+              or TokenType.NanLiteral
+              or TokenType.NilLiteral:
+            {
+                var tok = Read();
+                return new Literal(tok, tok.Value);
+            }
+
+            // (...)
+            case TokenType.OpenParen:
+            {
+                var open = Read();
+                var inner = ParseExpression();
+                var close = Require(t => t is TokenType.CloseParen, tok => $"Expected matching ')' for '(' (at {open.Span})");
+
+                return new ParenthesizedExpression(open, inner, close);
+            }
+
+            case TokenType.OpenTable:
+            {
+                var table = new List<(Expression key, Expression value)>();
+
+                var open = Read();
+                var (content, close) = ParseBlockUpto(t => t is TokenType.CloseTable);
+
+                //var close = Require(t => t is TokenType.CloseTable, tok => $"Expected matching '}}' for '{{' (at {start.Span})");
+                return new TableLiteral(open, content, close);
+            }
+
+            // [...]
+            case TokenType.OpenIndex:
+            {
+                var open = Read();
+                var inner = ParseCommaList(t => t is TokenType.CloseIndex);
+                var close = Require(t => t is TokenType.CloseIndex, tok => $"Expected matching ']' for '[' at {open.Span}");
+
+                return new ListLiteral(open, inner, close);
+            }
+            // |...|
+            /*
+            case TokenType.VecBound:
+            {
+                var start = Read();
+                var inner = ParseCommaList();
+                var close = Require(t => t is TokenType.VecBound, tok => $"Expected matching '|' for '|' at {start.Span}");
+                return new VectorLiteral(inner.Args);
+            }*/
+
+            // ???
+            default:
+            {
+                throw new ParserException("Unexpected item: " + Current.Type.GetDescription(), Current.Span);
+            }
+        }
+    }
+}
 
 #if EXECUTION
 /// <summary>

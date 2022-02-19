@@ -1,8 +1,4 @@
 ﻿using Boogie.Model;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace Boogie.Lang.Core;
 
 public class Lexer
@@ -36,15 +32,17 @@ public class Lexer
         lastIdx = idx;
     }
 
-    private SourceSpan Position
+    private SourceSpan Span
         => new(lastCharIdx, charIdx, lastLineIdx, lineIdx, lastIdx, idx, filename);
+    private SourceSpan CharSpan
+        => new(charIdx, charIdx + 1, lineIdx, lineIdx + 1, idx, idx + 1, filename);
 
     private Token MakeToken(TokenType type, object? value = null)
-        => new(type, Position, value);
+        => new(type, Span, value);
     private Token MakeTokenOfLen(int len, TokenType type, object? value = null)
     {
         Advance(len);
-        return new(type, Position, value);
+        return new(type, Span, value);
     }
 
     public Lexer(string str, string filename)
@@ -55,6 +53,154 @@ public class Lexer
         charIdx = 0;
         lineIdx = 0;
         idx = 0;
+    }
+
+    private bool IsWhiteSpace(char c)
+        => c is ' ' or '\t' or '\n' or '\r';
+
+    public string GetEscapeSequence()
+    {
+        if (Current is 'n')
+        {
+            Advance();
+            return "\n";
+        }
+        else if (Current is 'r')
+        {
+            Advance();
+            return "\r";
+        }
+        else if (Current is 't')
+        {
+            Advance();
+            return "\t";
+        }
+        else if (Current is '0')
+        {
+            Advance();
+            return "\0";
+        }
+        else if (Current is '$')
+        {
+            Advance();
+            return "$";
+        }
+        else if (Current is '\\')
+        {
+            Advance();
+            return "\\";
+        }
+        else if (IsWhiteSpace(Current))
+        {
+            while (Current is not '\\')
+            {
+                if (!IsWhiteSpace(Current))
+                {
+                    throw new LexerException($"Unexpected non-whitespace character inside of whitespace escape", CharSpan);
+                }
+                else if (Current is EOS)
+                {
+                    throw new LexerException($"Unterminated whitespace escape", Span);
+                }
+
+                if (Current is '\n' or '\r')
+                {
+                    SkipLine();
+                }
+                else
+                {
+                    Advance();
+                }
+            }
+            Advance();
+
+            return "";
+        }
+
+        throw new LexerException($"Unknown escape sequence '\\{Current}'", CharSpan);
+    }
+
+    public Token ReadString()
+    {
+        var startChar = Current;
+        var startCount = 0;
+        while(Current == startChar)
+        {
+            startCount++;
+            Advance();
+        }
+
+        if(startCount % 2 == 0)
+        {
+            return MakeToken(TokenType.StringLiteral, "");
+        }
+
+        var contents = "";
+        var endCount = 0;
+        while(endCount != startCount)
+        {
+            if(Current == startChar)
+            {
+                endCount++;
+            }
+            else
+            {
+                endCount = 0;
+            }
+
+            if (Current is '\n' or '\r')
+            {
+                contents += SkipLine();
+            }
+            else if (Current is '\\')
+            {
+                Advance();
+                contents += GetEscapeSequence();
+            }
+            else
+            {
+                contents += Current;
+                Advance();
+            }
+        }
+
+        return MakeToken(TokenType.StringLiteral, contents.Substring(0, contents.Length - startCount));
+    }
+
+    public string SkipLine()
+    {
+        var ret = "";
+
+        if (Current is '\n')
+        {
+            ret += '\n';
+
+            if (Next == '\r')
+            {
+                ret += '\r';
+                Advance(2);
+            }
+            else Advance();
+
+            lineIdx++;
+            charIdx = 0;
+        }
+        else if(Current is '\r')
+        {
+            ret += '\r';
+
+            if (Next == '\n')
+            {
+                ret += '\n';
+                Advance(2);
+            }
+            else Advance();
+
+            lineIdx++;
+            charIdx = 0;
+        }
+
+        return ret;
     }
 
     public Token LexSingle()
@@ -74,14 +220,20 @@ public class Lexer
                     if (Next == '-')
                     {
                         Advance(2);
-                        while (Current != '\n' && Current != '\r')
+                        while (Current is not '\n' or '\r' or EOS)
                             Advance();
                     }
                     if (Next == '*')
                     {
                         Advance(2);
-                        while (Current != '*' && Current != '-')
+                        while (Current is not '*' && Next is not '-')
+                        {
+                            if(Current is EOS)
+                            {
+                                throw new LexerException("Unterminated multine comment", Span);
+                            }
                             Advance();
+                        }
                         Advance(2);
                     }
                 }
@@ -96,26 +248,9 @@ public class Lexer
         StartToken();
         switch (Current)
         {
-            case '\n':
+            case '\n' or '\r':
             {
-                if (Next == '\r')
-                    Advance(2);
-                else Advance();
-
-                lineIdx++;
-                charIdx = 0;
-
-                return MakeToken(TokenType.LineBreak);
-            }
-            case '\r':
-            {
-                if (Next == '\n')
-                    Advance(2);
-                else Advance();
-
-                lineIdx++;
-                charIdx = 0;
-
+                SkipLine();
                 return MakeToken(TokenType.LineBreak);
             }
 
@@ -176,7 +311,7 @@ public class Lexer
             {
                 if (Next == '=')
                 {
-                    return MakeTokenOfLen(2, TokenType.ColonEq);
+                    return MakeTokenOfLen(2, TokenType.ColonEquals);
                 }
                 return MakeTokenOfLen(1, TokenType.Colon);
             }
@@ -243,6 +378,9 @@ public class Lexer
             case ']':
                 return MakeTokenOfLen(1, TokenType.CloseIndex);
 
+            case '\'' or '"':
+                return ReadString();
+
             default:
             {
                 // numbers
@@ -251,13 +389,18 @@ public class Lexer
                     string value = "";
                     bool isFloat = false;
 
-                    while (char.IsDigit(Current) || Current == '`' || (Current == '.' && !isFloat))
+                    while (char.IsDigit(Current) || Current == '\'' || (Current == '.' && !isFloat))
                     {
                         var c = Current;
                         Advance();
 
-                        if (Current == '`')
+                        if (Current == '\'')
                         {
+                            if(!char.IsDigit(Get(1)))
+                            {
+                                break;
+                            }
+
                             continue;
                         }
                         else if (Current == '.')
@@ -286,7 +429,7 @@ public class Lexer
                 }
                 // TODO: strings
 
-                throw new LexerException($"Invalid character '{Current}'.", Position);
+                throw new LexerException($"Invalid character '{Current}'.", Span);
             }
         }
     }

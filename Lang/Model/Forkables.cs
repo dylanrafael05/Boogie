@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Boogie.Model;
+﻿namespace Boogie.Model;
 
 public interface IForkable
 {

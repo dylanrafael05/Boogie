@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Boogie.Lang.Core;
+﻿namespace Boogie.Lang.Core;
 
 /// <summary>
 /// The base exception type for all exceptions relating to syntax.
