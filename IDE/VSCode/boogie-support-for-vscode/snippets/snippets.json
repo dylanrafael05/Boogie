@@ -30,16 +30,16 @@
     },
     "For Range Loop":
     {
-        "prefix": ["for_r", "for_range"],
+        "prefix": ["forrange"],
         "body": [
             "for i in ${1:start} to ${2:end} do",
             "\t$0",
             "end"
         ]
     },
-    "For Range Reverse Loop":
+    "Reverse For Range Loop":
     {
-        "prefix": ["for_r", "for_rrange", "for_reverse_range"],
+        "prefix": ["rforrange", "reverseforrange"],
         "body": [
             "for i in ${1:start} to ${2:end} by -1 do",
             "\t$0",
@@ -61,12 +61,96 @@
     {
         "prefix": ["main"],
         "body": [
-            "main() := do",
+            "let main = func do",
             "\t$0",
             "end",
             "",
             "-- Run the 'main' function if this program is the main program.",
             "if is_main do main() end"
+        ]
+    },
+    "Function":
+    {
+        "prefix": ["func"],
+        "body": [
+            "let ${1:name} = func do",
+            "\t",
+            "end"
+        ]
+    },
+    "Member":
+    {
+        "prefix": ["member"],
+        "body": [
+            "let ${1:name} = member do",
+            "\t",
+            "end"
+        ]
+    },
+    "Full Property":
+    {
+        "prefix": ["prop"],
+        "body": [
+            "let ${2:base}.get ${1:name} = member return nil",
+            "let ${2:base}.set ${1:name} = member do end"
+        ]
+    },
+    "Get Property":
+    {
+        "prefix": ["gprop", "getprop", "getonlyprop"],
+        "body": [
+            "let ${2:base}.get ${1:name} = member return nil"
+        ]
+    },
+    "Indexer":
+    {
+        "prefix": ["indexer"],
+        "body": [
+            "let ${2:base}.get[] = member i return nil",
+            "let ${2:base}.set[] = member i do end",
+            "let ${2:base}.let[] = member i do end",
+            "let ${2:base}.del[] = member i do end"
+        ]
+    },
+    "Custom Getter":
+    {
+        "prefix": ["objg", "objectgetter"],
+        "body": [
+            "let ${1:base}.get = member key return nil"
+        ]
+    },
+    "Custom Setter":
+    {
+        "prefix": ["objs", "objectsetter"],
+        "body": [
+            "let ${1:base}.set = member key do end"
+        ]
+    },
+    "Custom Letter":
+    {
+        "prefix": ["objl", "objectletter"],
+        "body": [
+            "let ${1:base}.let = member key do end"
+        ]
+    },
+    "Custom Deleter":
+    {
+        "prefix": ["objl", "objectletter"],
+        "body": [
+            "let ${1:base}.del = member key do end"
+        ]
+    },
+    "Simple Type":
+    {
+        "prefix": ["type"],
+        "body": [
+            "let ${1:name} = {}",
+            "",
+            "-- Constructor",
+            "let ${1:name}.new = func return {",
+            "\t-- Your members here!",
+            "\tmembers = ${1:name}",
+            "}"
         ]
     }
 }

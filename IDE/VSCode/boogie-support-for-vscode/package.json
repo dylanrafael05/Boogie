@@ -3,6 +3,7 @@
     "displayName": "Boogie Support for VSCode",
     "description": "A simple, work in progress extension which adds support for the Boogie language to Visual Studio Code!",
     "version": "0.0.1",
+    "icon": "https://github.com/dylanrafael05/Boogie/blob/main/icon.png",
     "engines": {
         "vscode": "^1.64.0"
     },

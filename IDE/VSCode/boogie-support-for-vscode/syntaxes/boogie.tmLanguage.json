@@ -25,11 +25,11 @@
 				},
 				{
 					"name": "keyword.control.$1.boogie",
-					"match": "\\b(if|else|elseif|do|for|catch|end|while|return|func|member|prop|try|throw)\\b"
+					"match": "\\b(if|else|elseif|do|for|catch|end|while|return|func|member|try|throw)\\b"
 				},
 				{
 					"name": "keyword.other.$1.boogie",
-					"match": "\\b(let|get|set|to|by)\\b"
+					"match": "\\b(let|get|set|del)\\b"
 				},
 				{
 					"name": "variable.language.meta",
@@ -40,8 +40,8 @@
 					"match": "\\b_[a-zA-Z0-9_]+\\b"
 				},
 				{
-					"name": "variable.language.boogie",
-					"match":"_|\\.\\.\\."
+					"name": "variable.language.boogie.garbage",
+					"match":"_"
 				},
 				{
 					"name": "support.other.continuation",
@@ -49,11 +49,15 @@
 				},
 				{
 					"name": "variable.language.$1.boogie",
-					"match":"\\b(self|meta|int|float|str|bool|list|dict|is_main|err)\\b"
+					"match":"\\b(unary|oper|self|members|int|float|str|bool|list|dict|err|is_main)\\b"
 				},
 				{
 					"name": "keyword.operator.new.$1.boogie",
-					"match": "\\b(in|is|and|not|or)\\b"
+					"match": "\\b(in|is|and|not|or|to|by)\\b"
+				},
+				{
+					"name": "constant.language.boogie",
+					"match": "\\b(true|false|nil)\\b"
 				},
 				{
 					"name": "variable.boogie",
@@ -62,14 +66,6 @@
 				{
 					"name": "keyword.operator.boogie",
 					"match": "(\\+|-|\\*|\\/|\\/\\/|\\*\\*|\\*\\.|\\*\\/|==|!=|~=|>|>=|<=|<|\\|>|=|:=|\\.|:)"
-				},
-				{
-					"name": "keyword.operator.boogie",
-					"match": "!"
-				},
-				{
-					"name": "constant.language.boogie",
-					"match": "\\b(true|false|nil)\\b"
 				},
 				{
 					"name": "constant.numeric.integer.boogie",

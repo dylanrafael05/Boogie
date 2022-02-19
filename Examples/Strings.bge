@@ -10,5 +10,5 @@ a = """""Quintuple double quotes"""""
 a = "\n\r\t\0 escape characters \0\t\n\r"
 a = "\
 
-    \Whitespace escape"
+    \Whitespace escape: all that whitespace is ignored!"
 a = ""
